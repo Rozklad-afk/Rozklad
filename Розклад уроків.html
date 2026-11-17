@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Розклад уроків</title>
+<style>
+:root{--bg:#f5f5f5;--card:#fff;--soft:#f5f5f5;--tx:#111;--mu:#707070;--ac:#111;--ao:#fff;--ac2:#e4e4e4;--hl:#ebebeb;--hb:#111;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121212;--card:#1c1c1c;--soft:#121212;--tx:#eee;--mu:#9a9a9a;--ac:#eee;--ao:#111;--ac2:#2c2c2c;--hl:#2a2a2a;--hb:#eee}}
+:root[data-theme="dark"]{--bg:#121212;--card:#1c1c1c;--soft:#121212;--tx:#eee;--mu:#9a9a9a;--ac:#eee;--ao:#111;--ac2:#2c2c2c;--hl:#2a2a2a;--hb:#eee}
+:root[data-theme="light"]{--bg:#f5f5f5;--card:#fff;--soft:#f5f5f5;--tx:#111;--mu:#707070;--ac:#111;--ao:#fff;--ac2:#e4e4e4;--hl:#ebebeb;--hb:#111}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:960px;margin:0 auto;padding:20px 16px 40px}
+h1{margin:0;font-size:28px;letter-spacing:.5px}
+.sub{color:var(--mu);font-size:13px;letter-spacing:.15em;text-transform:uppercase}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+button{font:inherit;color:inherit;cursor:pointer}
+.ic{background:var(--card);border:1px solid var(--ac2);border-radius:10px;padding:6px 10px}
+.now{margin:16px 0;padding:16px;border-radius:16px;background:var(--ac);color:var(--ao)}
+.now small{opacity:.8;display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.now b{font-size:21px;display:block;margin:2px 0}
+.now .r{display:flex;gap:24px;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:12px 0}
+.tabs button{flex:1;min-width:64px;padding:10px 6px;border-radius:12px;border:1px solid var(--ac2);background:var(--card)}
+.tabs button.on{background:var(--ac);color:var(--ao);border-color:var(--ac)}
+.tabs button.td{box-shadow:inset 0 -3px var(--hb)}
+.mode{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.mode input{flex:1;min-width:160px;padding:9px 12px;border-radius:10px;border:1px solid var(--ac2);background:var(--card);color:var(--tx);font:inherit}
+.l{display:flex;gap:12px;align-items:flex-start;padding:12px;margin-bottom:8px;border-radius:14px;background:var(--card);border:2px solid transparent}
+.l.cur{background:var(--hl);border-color:var(--hb)}
+.l.hit{border-color:var(--ac)}
+.l.dim{opacity:.35}
+.n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ac2);color:var(--ac);font-weight:700;display:grid;place-items:center;font-size:14px}
+.t{font-size:12px;color:var(--mu);font-weight:600}
+.s{font-weight:600}
+.s.free{color:var(--mu);font-weight:400}
+.v{font-size:12px;color:var(--mu)}
+.badge{margin-left:auto;font-size:11px;background:var(--hb);color:var(--ao);border-radius:8px;padding:2px 8px;font-weight:700;white-space:nowrap}
+.scroll{overflow-x:auto;background:var(--card);border-radius:14px}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid var(--ac2);text-align:left;vertical-align:top}
+th{background:var(--ac);color:var(--ao);font-size:12px}
+td.cur{background:var(--hl)}td.td,th.td{outline:2px solid var(--hb);outline-offset:-2px}
+td.hit{background:var(--ac2);font-weight:600}
+td.free{color:var(--mu)}
+.bells{margin-top:16px;color:var(--mu);font-size:13px}
+</style>
+</head>
+<body>
+<div class="w">
+ <div class="top"><div><div class="sub">Навчальний тиждень</div><h1>Розклад уроків</h1></div>
+ <button class="ic" id="th" title="Тема">🌓</button></div>
+ <div class="now" id="now"></div>
+ <div class="mode">
+  <button class="ic" id="vm">📅 Весь тиждень</button>
+  <input id="q" type="search" placeholder="Знайти предмет, напр. Алгебра">
+ </div>
+ <div class="tabs" id="tabs"></div>
+ <div id="out"></div>
+ <p class="bells" id="bells"></p>
+</div>
+<script>
+const D=["Понеділок","Вівторок","Середа","Четвер","П’ятниця"];
+const T1=["08:30–09:00","09:20–10:00","10:10–10:50","11:00–11:40","11:50–12:30","12:40–13:20","13:30–14:10","14:20–15:00"];
+const T2=["08:30–09:00","09:25–10:10","10:20–11:05","11:15–12:00","12:10–12:55","13:05–13:50","14:00–14:45","14:55–15:40"];
+const F="Вільне вікно";
+const S=[
+["Інформатика (гр1)","Українська мова","Алгебра","Українська література","Англійська мова","Фізика",F,F],
+["Інформатика (гр1)","Українська мова","Англійська мова","Алгебра","Геометрія","Хімія","Образотворче мистецтво","Інформатика (гр2)"],
+[["Англійська мова / Зарубіжна література","A — Англійська · Б — Зарубіжна література"],"Біологія","Українська мова","Українська література",["Інтегрований курс / Громадянська освіта","A — Інтегрований курс · Б — Громадянська освіта"],"Фізкультура","Технології","Всесвітня історія"],
+["Англійська мова","Фізкультура","Географія","Геометрія","Історія України","ІК «Здоров’я, безпека та добробут»","Біологія / Хімія",F],
+["Біологія","Фізика","Алгебра","Географія","Фізкультура","Музичне мистецтво","Зарубіжна література","Інформатика (гр2)"]];
+const tm=(d,i)=>(d==0?T1:T2)[i];
+const nm=x=>Array.isArray(x)?x[0]:x;
+const mins=s=>{const[h,m]=s.split(":");return +h*60+ +m};
+const rng=(d,i)=>tm(d,i).split("–").map(mins);
+const $=id=>document.getElementById(id);
+const g=new Date().getDay(), today=g>=1&&g<=5?g-1:-1;
+let day=today>=0?today:0, week=false, q="";
+function status(){
+ const n=new Date(),m=n.getHours()*60+n.getMinutes(),el=$("now");
+ if(today<0){el.innerHTML="<small>Сьогодні</small><b>Вихідний 🎉</b>Наступний навчальний день — понеділок";return}
+ let cur=-1,nxt=-1;
+ for(let i=0;i<8;i++){const[a,b]=rng(today,i);if(nm(S[today][i])==F)continue;
+  if(m>=a&&m<b)cur=i;else if(m<a&&nxt<0)nxt=i}
+ if(cur>=0&&nxt<0){for(let i=cur+1;i<8;i++)if(nm(S[today][i])!=F){nxt=i;break}}
+ let h="";
+ if(cur>=0){const e=rng(today,cur)[1]-m;h+=`<div><small>Зараз · урок ${cur+1}</small><b>${nm(S[today][cur])}</b>до кінця ${e} хв</div>`}
+ if(nxt>=0){const e=rng(today,nxt)[0]-m;h+=`<div><small>Далі · урок ${nxt+1}</small><b>${nm(S[today][nxt])}</b>${e>0?"початок через "+e+" хв":"о "+tm(today,nxt).slice(0,5)}</div>`}
+ if(!h)h=m<rng(today,0)[0]?"<small>Сьогодні</small><b>Уроки ще не почалися</b>Перший о 08:30":"<small>Сьогодні</small><b>Уроки закінчилися ✅</b>Гарного відпочинку";
+ el.innerHTML=`<div class="r">${h}</div>`}
+function curIdx(d){if(d!=today)return -1;const n=new Date(),m=n.getHours()*60+n.getMinutes();for(let i=0;i<8;i++){const[a,b]=rng(d,i);if(m>=a&&m<b)return i}return -1}
+const hit=x=>q&&nm(x).toLowerCase().includes(q);
+function render(){
+ $("tabs").innerHTML=D.map((d,i)=>`<button class="${!week&&i==day?"on":""} ${i==today?"td":""}" data-i="${i}">${d.slice(0,2)}<br><small>${d.length>8?d.slice(0,3)+".":d}</small></button>`).join("");
+ $("tabs").style.display=week?"none":"flex";
+ $("vm").textContent=week?"📋 Один день":"📅 Весь тиждень";
+ if(!week){
+  const c=curIdx(day);
+  $("out").innerHTML=S[day].map((x,i)=>{const f=nm(x)==F,h=hit(x);
+   return `<div class="l ${i==c?"cur":""} ${h?"hit":""} ${q&&!h?"dim":""}"><div class="n">${i+1}</div><div><div class="t">${tm(day,i)}</div><div class="s ${f?"free":""}">${nm(x)}</div>${Array.isArray(x)?`<div class="v">${x[1]}</div>`:""}</div>${i==c?'<span class="badge">ЗАРАЗ</span>':""}</div>`}).join("")
+ }else{
+  let h="<div class='scroll'><table><tr><th>№</th>"+D.map((d,i)=>`<th class="${i==today?"td":""}">${d}</th>`).join("")+"</tr>";
+  for(let i=0;i<8;i++){h+=`<tr><td><b>${i+1}</b></td>`+D.map((d,j)=>{const x=S[j][i];
+   return `<td class="${curIdx(j)==i?"cur":""} ${j==today?"td":""} ${hit(x)?"hit":""} ${nm(x)==F?"free":""}"><div class="t">${tm(j,i)}</div>${nm(x)}</td>`}).join("")+"</tr>"}
+  $("out").innerHTML=h+"</table></div>"}
+ status()}
+$("tabs").onclick=e=>{const b=e.target.closest("button");if(b){day=+b.dataset.i;render()}};
+$("vm").onclick=()=>{week=!week;render()};
+$("q").oninput=e=>{q=e.target.value.trim().toLowerCase();render()};
+$("th").onclick=()=>{const r=document.documentElement,d=getComputedStyle(r).getPropertyValue("--bg").trim()=="#121212";r.dataset.theme=d?"light":"dark"};
+$("bells").textContent="Після першого уроку наступний дзвінок: 09:10 у понеділок · 09:15 з вівторка по п’ятницю.";
+render();setInterval(()=>{status()},30000);setInterval(render,60000);
+</script>
+</body>
+</html>
